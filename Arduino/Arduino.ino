@@ -83,8 +83,8 @@ void checkSerialIn()
     else
     {
       String nextLine = serialValue;
-      nextLine.remove(0, serialValue.indexOf(":"));
-      serialValue.remove(serialValue.indexOf(":") + 1, 0xffff);
+      nextLine.remove(0, serialValue.indexOf(":") + 1);
+      serialValue.remove(serialValue.indexOf(":"), 0xffff);
       lastPrintLine2 = nextLine;
       lastPrint = serialValue;
     }

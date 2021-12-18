@@ -72,7 +72,7 @@ class IRRemoteController with ListenableObject {
   }
 
   void handleRemoteAction(IRRemoteController controller) {
-    lcdController.printToLcd("IR:${controller.currentAction.name}");
+    lcdController.printToLcd("IR-Remote:${controller.currentAction.name}");
     switch (controller.currentAction) {
       case RemoteKey.plus200:
         // TODO: Handle this case.
