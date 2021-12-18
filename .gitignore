@@ -1,0 +1,9 @@
+Arduino/.vscode/arduino.json
+Arduino/.vscode/c_cpp_properties.json
+Arduino/.vscode/launch.json
+Arduino/.vscode/tasks.json
+.vscode/settings.json
+ir_remote_application/.vscode/launch.json
+ir_remote_application/.vscode/settings.json
+ir_remote_application/.metadata
+ir_remote_application/pubspec.lock
