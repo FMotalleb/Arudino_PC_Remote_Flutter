@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ir_remote_application/components/log/log_last_item_view.dart';
+import 'package:ir_remote_application/controllers/lcd_controller/lcd_controller.dart';
 import 'package:ir_remote_application/controllers/native_methods_controller/keyboard_controller.dart';
 import 'controllers/serial_port_controller/serial_port_controller.dart';
 
-SerialPortController mainController = SerialPortController();
+SerialPortController serialController = SerialPortController();
+late LcdController lcdController = LcdController(serialController);
 void main() {
   runApp(const MyApp());
 }
@@ -53,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            LastItemView(boundedItem: mainController.lastInput)
+            LastItemView(boundedItem: serialController.lastInput)
           ],
         ),
       ),

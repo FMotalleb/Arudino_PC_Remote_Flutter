@@ -10,6 +10,7 @@ LiquidCrystal lcd(2, 3, 9, 10, 11, 12);
 IRrecv irReceiver(RECV_PIN);
 decode_results results;
 String lastPrint = "";
+String lastPrintLine2 = "";
 
 void printToSerial(String tag, uint32_t text)
 {
@@ -30,7 +31,7 @@ String toString(int value)
   return result;
 }
 
-void printToLCD(String firstLine, String secondLine = "")
+void printToLCD(String firstLine, String secondLine = "test")
 {
   lcd.clear();
   lcd.print(firstLine);
@@ -57,7 +58,6 @@ void checkIRResults()
 
     printToSerial(tag, value);
     digitalWrite(LED_BUILTIN, HIGH);
-    delay(30);
 
     irReceiver.resume();
     digitalWrite(LED_BUILTIN, LOW);
@@ -72,13 +72,24 @@ void checkSerialIn()
     if (serialValue == "flush")
     {
       clearLCD();
+      lastPrintLine2 = "";
       lastPrint = "";
+    }
+    else if (serialValue.indexOf(":") < 0)
+    {
+      lastPrint = serialValue;
+      lastPrintLine2 = "";
     }
     else
     {
+      String nextLine = serialValue;
+      nextLine.remove(0, serialValue.indexOf(":"));
+      serialValue.remove(serialValue.indexOf(":") + 1, 0xffff);
+      lastPrintLine2 = nextLine;
       lastPrint = serialValue;
     }
-    printToLCD(lastPrint);
+
+    printToLCD(lastPrint, lastPrintLine2);
   }
 }
 
@@ -90,6 +101,7 @@ void setup()
   irReceiver.enableIRIn();
   lcd.begin(16, 2);
   Serial.println("Enabled IRin");
+  Serial.setTimeout(10);
 }
 
 void loop()
@@ -97,5 +109,4 @@ void loop()
   checkIRResults();
   // put your main code here, to run repeatedly:
   checkSerialIn();
-  delay(30);
 }

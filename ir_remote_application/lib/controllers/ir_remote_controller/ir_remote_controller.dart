@@ -1,6 +1,7 @@
 import 'package:hemend/object_controllers/listenables/listenable_object.dart';
 import 'package:ir_remote_application/controllers/native_methods_controller/keyboard_controller.dart';
 import 'package:ir_remote_application/controllers/native_methods_controller/terminal_controller.dart';
+import 'package:ir_remote_application/main.dart';
 
 enum RemoteKey {
   plus200,
@@ -71,6 +72,7 @@ class IRRemoteController with ListenableObject {
   }
 
   void handleRemoteAction(IRRemoteController controller) {
+    lcdController.printToLcd("IR:${controller.currentAction.name}");
     switch (controller.currentAction) {
       case RemoteKey.plus200:
         // TODO: Handle this case.
