@@ -38,6 +38,14 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  bool _backlight = true;
+
+  bool get backlight => _backlight;
+
+  set backlight(bool backlight) {
+    _backlight = backlight;
+    serialController.write('lcd:backLight:${_backlight ? "on" : "off"}');
+  }
 
   void _incrementCounter() {
     KeyboardController.sendKey(VirtualKeyboardKeys.VOLUME_MUTE);
@@ -49,9 +57,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -65,11 +70,16 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _incrementCounter,
-      //   tooltip: 'Increment',
-      //   child: const Icon(Icons.add),
-      // ), // This trailing comma makes auto-formatting nicer for build methods.
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        foregroundColor:
+            (!backlight) ? const Color(0xfffefefe) : const Color(0xff1e1e1e),
+        backgroundColor:
+            backlight ? const Color(0xfffefefe) : const Color(0xff1e1e1e),
+        onPressed: () => setState(() => backlight = !backlight),
+        tooltip: 'set LCD backlight to ${_backlight ? "off" : "on"}',
+        child: Icon(backlight ? Icons.lightbulb : Icons.lightbulb_outline),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

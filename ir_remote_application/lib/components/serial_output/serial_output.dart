@@ -10,7 +10,7 @@ class SerialOutput extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 250,
+          width: 450,
           height: 50,
           child: TextField(
             controller: controller,

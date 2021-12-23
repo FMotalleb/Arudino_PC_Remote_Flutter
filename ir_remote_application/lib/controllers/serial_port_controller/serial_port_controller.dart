@@ -16,7 +16,7 @@ class SerialPortController {
       : _port = SerialPort(serialPort) {
     irRemoteController.addListener(
         () => irRemoteController.handleRemoteAction(irRemoteController));
-
+    _port.flush();
     if (!_port.openReadWrite()) {}
     final reader = SerialPortReader(_port);
     reader.stream.listen(
