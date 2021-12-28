@@ -1,0 +1,177 @@
+#include <IRremote.h>
+#include <LiquidCrystal_I2C.h>
+#include <string.h>
+using namespace std;
+
+// IR remote
+int RECV_PIN = 8;
+IRrecv irReceiver(RECV_PIN);
+decode_results results;
+
+// RFID
+#define SS_PIN 10
+#define RST_PIN 9
+#define card "B0 4A 49 32"
+#define tag "39 64 58 C2"
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+
+// LCD
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+String lastPrint = "";
+String lastPrintLine2 = "";
+
+// ANCHOR Int To String
+String toString(int value)
+{
+    String result = "";
+    int buffer = value;
+    while (value > 0)
+    {
+        int cache = buffer % 10 + 48;
+        result = (char)cache + result;
+        buffer = buffer / 10;
+    }
+    return result;
+}
+// ANCHOR RFID methodes
+void checkRFID()
+{
+    // Look for new cards
+    if (!mfrc522.PICC_IsNewCardPresent())
+    {
+        return;
+    }
+    // Select one of the cards
+    if (!mfrc522.PICC_ReadCardSerial())
+    {
+        return;
+    }
+    // Show UID on serial monitor
+    Serial.print("UID tag :");
+    String content = "";
+    byte letter;
+    for (byte i = 0; i < mfrc522.uid.size; i++)
+    {
+        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+        Serial.print(mfrc522.uid.uidByte[i], HEX);
+        content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+        content.concat(String(mfrc522.uid.uidByte[i], HEX));
+    }
+    Serial.println();
+    Serial.print("Message : ");
+    content.toUpperCase();
+    if (content.substring(1) == "39 64 58 C2") // change here the UID of the card/cards that you want to give access
+    {
+        Serial.println("Authorized access");
+        Serial.println();
+    }
+
+    else
+    {
+        Serial.println(" Access denied");
+    }
+}
+// ANCHOR LiquidCrystal LCD Methodes
+void printToLCD(String firstLine, String secondLine = "test")
+{
+    lcd.clear();
+    lcd.print(firstLine);
+    lcd.setCursor(0, 1);
+    lcd.print(secondLine);
+
+    if (firstLine == "")
+    {
+        lcd.clear();
+    }
+}
+
+void clearLCD()
+{
+    lcd.clear();
+}
+
+// ANCHOR Check Infrared remote result
+void checkIRResults()
+{
+    String tag = "IRRemote";
+    if (irReceiver.decode())
+    {
+        uint32_t value = irReceiver.decodedIRData.decodedRawData / 65280;
+
+        printToSerial(tag, value);
+        digitalWrite(LED_BUILTIN, HIGH);
+
+        irReceiver.resume();
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+}
+// ANCHOR Print to serial
+void printToSerial(String tag, uint32_t text)
+{
+    Serial.println(tag + ":" + text);
+}
+// ANCHOR Check Serial Input
+void checkSerialInput()
+{
+    String serialValue = Serial.readString();
+    if (serialValue.startsWith("lcd:"))
+    {
+        serialValue.replace("lcd:", "");
+        if (serialValue == "flush")
+        {
+            clearLCD();
+            lastPrintLine2 = "";
+            lastPrint = "";
+        }
+        else if (serialValue.startsWith("backLight:"))
+        {
+            serialValue.replace("backLight:", "");
+            bool setBackLight = serialValue == "on";
+            if (setBackLight)
+            {
+                lcd.backlight();
+            }
+            else
+            {
+                lcd.noBacklight();
+            }
+        }
+        else if (serialValue.indexOf(":") < 0)
+        {
+            lastPrint = serialValue;
+            lastPrintLine2 = "";
+        }
+        else
+        {
+            String nextLine = serialValue;
+            nextLine.remove(0, serialValue.indexOf(":") + 1);
+            serialValue.remove(serialValue.indexOf(":"), 0xffff);
+            lastPrintLine2 = nextLine;
+            lastPrint = serialValue;
+        }
+
+        printToLCD(lastPrint, lastPrintLine2);
+    }
+}
+
+// ANCHOR Setup
+void setup()
+{
+    // put your setup code here, to run once:
+    pinMode(LED_BUILTIN, OUTPUT);
+    Serial.begin(9600);
+    irReceiver.enableIRIn();
+    // lcd.begin(16, 2);
+    lcd.init();
+    lcd.backlight();
+    Serial.println("Enabled IRin");
+    Serial.setTimeout(10);
+}
+// ANCHOR Loop
+void loop()
+{
+    checkIRResults();
+    // put your main code here, to run repeatedly:
+    checkSerialInput();
+    checkRFID();
+}

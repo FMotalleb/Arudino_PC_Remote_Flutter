@@ -16,7 +16,7 @@ class _LastItemViewState extends BindableState<LastItemView, BindableString> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: Text("last serial input : ${bondedObject.text}"),
+      child: Text("log : ${bondedObject.text}"),
     );
   }
 

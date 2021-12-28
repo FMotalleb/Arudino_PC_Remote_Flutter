@@ -5,6 +5,7 @@ import 'package:ir_remote_application/components/log/log_last_item_view.dart';
 import 'package:ir_remote_application/components/serial_output/serial_output.dart';
 import 'package:ir_remote_application/controllers/lcd_controller/lcd_controller.dart';
 import 'package:ir_remote_application/controllers/native_methods_controller/keyboard_controller.dart';
+import 'components/value_bar/value_bar.dart';
 import 'controllers/serial_port_controller/serial_port_controller.dart';
 
 SerialPortController serialController = SerialPortController();
@@ -66,6 +67,9 @@ class _MyHomePageState extends State<MyHomePage> {
               child: SerialOutput(
                 lcdController: lcdController,
               ),
+            ),
+            ValueBar(
+              receiver: serialController.valueController,
             )
           ],
         ),

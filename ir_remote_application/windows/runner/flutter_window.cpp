@@ -9,6 +9,11 @@
 #include <flutter/method_channel.h>
 #include <flutter/method_result_functions.h>
 #include <string>
+
+#include <windows.h>
+#include <mmdeviceapi.h>
+#include <endpointvolume.h>
+
 FlutterWindow::FlutterWindow(const flutter::DartProject &project)
     : project_(project) {}
 
@@ -18,6 +23,61 @@ void callKeyboardKey(int key)
 {
   keybd_event((BYTE)key, 0, 1, 0);
 }
+float GetSystemVolume()
+{
+  HRESULT hr;
+
+  // -------------------------
+  CoInitialize(NULL);
+  IMMDeviceEnumerator *deviceEnumerator = NULL;
+  hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&deviceEnumerator);
+  IMMDevice *defaultDevice = NULL;
+
+  hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
+  deviceEnumerator->Release();
+  deviceEnumerator = NULL;
+
+  IAudioEndpointVolume *endpointVolume = NULL;
+  hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID *)&endpointVolume);
+  defaultDevice->Release();
+  defaultDevice = NULL;
+
+  float currentVolume = 0;
+
+  // Current volume as a scalar
+  hr = endpointVolume->GetMasterVolumeLevelScalar(&currentVolume);
+
+  endpointVolume->Release();
+  CoUninitialize();
+
+  return currentVolume;
+}
+void SetSystemVolume(double newVolume)
+{
+  HRESULT hr;
+
+  // -------------------------
+  CoInitialize(NULL);
+  IMMDeviceEnumerator *deviceEnumerator = NULL;
+  hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&deviceEnumerator);
+  IMMDevice *defaultDevice = NULL;
+
+  hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &defaultDevice);
+  deviceEnumerator->Release();
+  deviceEnumerator = NULL;
+
+  IAudioEndpointVolume *endpointVolume = NULL;
+  hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID *)&endpointVolume);
+  defaultDevice->Release();
+  defaultDevice = NULL;
+
+  hr = endpointVolume->SetMasterVolumeLevelScalar((float)newVolume, NULL);
+
+  endpointVolume->Release();
+
+  CoUninitialize();
+}
+
 void initMethodChannel(flutter::FlutterEngine *flutter_instance)
 {
   // name your channel
@@ -46,6 +106,13 @@ void initMethodChannel(flutter::FlutterEngine *flutter_instance)
           std::string cmd = call.method_name().substr(9);
 
           result->Success(std::system(cmd.c_str()));
+        }
+        else if (call.method_name()._Starts_with("volume"))
+        {
+          std::string volume = call.method_name().substr(7);
+          // waveOutSetVolume(NULL, (int)(atoi(volume.c_str()) * 655.35));
+          SetSystemVolume(((float)atoi(volume.c_str())) / 100);
+          result->Success("volume set");
         }
         else
         {
