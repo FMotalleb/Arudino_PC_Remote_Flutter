@@ -3,16 +3,28 @@
 #include <IRremote.h>
 #include <LiquidCrystal_I2C.h>
 #include <string.h>
+#include <SoftwareSerial.h>
 
 using namespace std;
 
-int RELAY_PIN = A1;
+SoftwareSerial blueToothSlaveSerial(2, 3); // RX, TX
+// Relay
+int RELAY_PIN = A0;
 bool relayValue = false;
+// RGB LED
+int RGB_RED = A1;
+int RGB_GREEN = A2;
+int RGB_BLUE = A3;
+
+/// 0 : internal commands
+/// 1 : serial command mode
+int WORKING_MODE = 0;
+
 // volume
-int volumePin = A0;
-int minimumInput = 45;                 // The minimum
-int maximumInput = 920 - minimumInput; // The maximum
-int lastVolumeValue = 0;
+// int volumePin = A0;
+// int minimumInput = 45;                 // The minimum
+// int maximumInput = 920 - minimumInput; // The maximum
+// int lastVolumeValue = 0;
 // IR remote
 int RECV_PIN = 8;
 IRrecv irReceiver(RECV_PIN);
@@ -47,7 +59,16 @@ String toString(int value)
     }
     return result;
 }
-
+void setRGB(int red, int green, int blue)
+{
+    analogWrite(RGB_RED, 0);
+    analogWrite(RGB_GREEN, 0);
+    analogWrite(RGB_BLUE, 0);
+    delay(5);
+    analogWrite(RGB_RED, red);
+    analogWrite(RGB_GREEN, green);
+    analogWrite(RGB_BLUE, blue);
+}
 // ANCHOR LiquidCrystal LCD Methodes
 void printToLCD(String firstLine, String secondLine = "")
 {
@@ -68,40 +89,79 @@ void clearLCD()
 }
 void handleInternalCommands(int command)
 {
+    if (WORKING_MODE == 0)
+    {
+        setRGB(350, 0, 0);
+    }
+    else if (WORKING_MODE == 1)
+    {
+        setRGB(0, 150, 130);
+    }
+
     switch (command)
     {
+    case 47873:
+        if (WORKING_MODE > 0)
+        {
+            WORKING_MODE--;
+            setRGB(0, 150, 150);
+        }
+        break;
+    case 47361:
+        if (WORKING_MODE < 1)
+        {
+            WORKING_MODE++;
+            setRGB(150, 0, 150);
+        }
+        break;
     case 62465:
-        if (relayValue)
-        {
-            analogWrite(RELAY_PIN, 0);
-            relayValue = false;
-        }
-        else
-        {
-            analogWrite(RELAY_PIN, 1024);
-            relayValue = true;
-        }
+        if (WORKING_MODE == 0)
+            if (relayValue)
+            {
+                analogWrite(RELAY_PIN, 0);
+                relayValue = false;
+                lcd.noBacklight();
+                hasBacklight = false;
+            }
+            else
+            {
+                analogWrite(RELAY_PIN, 1024);
+                relayValue = true;
+            }
         break;
     case 47617:
-        if (hasBacklight)
-        {
-            lcd.noBacklight();
-            hasBacklight = false;
-        }
-        else
-        {
-            lcd.backlight();
-            hasBacklight = true;
-        }
+        if (WORKING_MODE == 0)
+            if (hasBacklight)
+            {
+                lcd.noBacklight();
+                hasBacklight = false;
+            }
+            else
+            {
+                lcd.backlight();
+                hasBacklight = true;
+            }
         break;
-    default:
-        break;
+        // default:
     }
+    if (WORKING_MODE == 0)
+    {
+        printToLCD("Working Mode", "internal");
+    }
+    else if (WORKING_MODE == 1)
+    {
+        printToLCD("Working Mode", "serial");
+    }
+
+    delay(50);
+
+    setRGB(0, 0, 0);
 }
 // ANCHOR Check Infrared remote result
 void checkIRResults()
 {
     String tag = "IRRemote";
+
     if (irReceiver.decode())
     {
         uint32_t value = irReceiver.decodedIRData.decodedRawData / 65280;
@@ -114,16 +174,43 @@ void checkIRResults()
 // ANCHOR Print to serial
 void printToSerial(String tag, uint32_t text)
 {
-    Serial.println(tag + ":" + text);
+    if (Serial.available())
+    {
+
+        Serial.println(tag + ":" + text);
+    }
+    if (blueToothSlaveSerial.available())
+    {
+
+        blueToothSlaveSerial.println(tag + ":" + text);
+    }
 }
 void printToSerial(String tag, String text)
 {
-    Serial.println(tag + ":" + text);
+    if (Serial.available())
+    {
+
+        Serial.println(tag + ":" + text);
+    }
+    if (blueToothSlaveSerial.available())
+    {
+
+        blueToothSlaveSerial.println(tag + ":" + text);
+    }
 }
 // ANCHOR Check Serial Input
 void checkSerialInput()
 {
-    String serialValue = Serial.readString();
+    String serialValue = "";
+    if (Serial.available())
+    {
+        serialValue = Serial.readString();
+    }
+    if (blueToothSlaveSerial.available())
+    {
+        serialValue = blueToothSlaveSerial.readString();
+    }
+
     if (serialValue.startsWith("lcd:"))
     {
         serialValue.replace("lcd:", "");
@@ -167,13 +254,13 @@ void checkSerialInput()
     else if (serialValue.startsWith("relay:"))
     {
         serialValue.replace("relay:", "");
-        if (serialValue == "on")
+        if (serialValue.startsWith("on"))
         {
             analogWrite(RELAY_PIN, 1024);
             // pinMode(RELAY_PIN, HIGH);
             printToLCD("relay control", "on");
         }
-        else
+        else if (serialValue.startsWith("off"))
         {
             analogWrite(RELAY_PIN, 0);
             printToLCD("relay control", "off");
@@ -242,49 +329,61 @@ void checkSerialInput()
 //     delay(1500);
 //     // delay(2000);
 // }
-void checkVolumeInput()
-{
-    String tag = "volume";
-    int volumeInput = analogRead(volumePin);
-    volumeInput = volumeInput - minimumInput;
-    int value = ((double)volumeInput) / maximumInput * 100;
-    if (value < 0)
-    {
-        value = 0;
-    }
-    else if (value > 100)
-    {
-        value = 100;
-    }
-    if (value != lastVolumeValue)
-    {
+// void checkVolumeInput()
+// {
+//     String tag = "volume";
+//     int volumeInput = analogRead(volumePin);
+//     volumeInput = volumeInput - minimumInput;
+//     int value = ((double)volumeInput) / maximumInput * 100;
+//     if (value < 0)
+//     {
+//         value = 0;
+//     }
+//     else if (value > 100)
+//     {
+//         value = 100;
+//     }
+//     if (value != lastVolumeValue)
+//     {
 
-        lastVolumeValue = value;
-        printToSerial(tag, value);
+//         lastVolumeValue = value;
+//         printToSerial(tag, value);
 
-        printToLCD("Volume Changed", toString(value));
-    }
-}
+//         printToLCD("Volume Changed", toString(value));
+//     }
+// }
 // ANCHOR Setup
+void passData()
+{
+    Serial.println(blueToothSlaveSerial.readString());
+    delay(100);
+}
 void setup()
 {
     // put your setup code here, to run once:
     pinMode(LED_BUILTIN, OUTPUT);
-    Serial.begin(9600);
+
     irReceiver.enableIRIn();
     // lcd.begin(16, 2);
     lcd.init();
-    lcd.backlight();
-    Serial.println("Enabled IRin");
+    lcd.noBacklight();
+    Serial.begin(9600);
+
     Serial.setTimeout(15);
+    blueToothSlaveSerial.begin(9600);
+    blueToothSlaveSerial.println("Enabled IRin-BT");
+    blueToothSlaveSerial.setTimeout(15);
     SPI.begin(); // Initiate  SPI bus
+    Serial.println("setup:startup:setupFinished");
 }
 // ANCHOR Loop
 void loop()
 {
-    // checkRFID();
+    // passData();
     checkIRResults();
     checkSerialInput();
+
     // checkTemperature();
     // checkVolumeInput();
+    // checkRFID();
 }
