@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+
+import 'blue_tooth/chat_page.dart';
+import 'blue_tooth/select_device_pages/select_device_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -95,8 +99,26 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            ElevatedButton(
+              child: const Text('Connect to paired device to chat'),
+              onPressed: () async {
+                final BluetoothDevice? selectedDevice =
+                    await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return const SelectBondedDevicePage(
+                          checkAvailability: false);
+                    },
+                  ),
+                );
+
+                if (selectedDevice != null) {
+                  print('Connect -> selected ' + selectedDevice.address);
+                  _startChat(context, selectedDevice);
+                } else {
+                  print('Connect -> no device selected');
+                }
+              },
             ),
             Text(
               '$_counter',
@@ -110,6 +132,16 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  void _startChat(BuildContext context, BluetoothDevice server) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) {
+          return ChatPage(server: server);
+        },
+      ),
     );
   }
 }

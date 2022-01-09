@@ -3,11 +3,20 @@
 #include <IRremote.h>
 #include <LiquidCrystal_I2C.h>
 #include <string.h>
+#include <vector.h>
 #include <SoftwareSerial.h>
+#include <Ticker.h>
+
+#include <stdio.h>
 
 using namespace std;
 
+void printToLCD(String, String);
+void clearLCD();
+
+Ticker clearLCDTicker(clearLCD, 3500, 0, MILLIS);
 SoftwareSerial blueToothSlaveSerial(2, 3); // RX, TX
+
 // Relay
 int RELAY_PIN = A0;
 bool relayValue = false;
@@ -61,10 +70,6 @@ String toString(int value)
 }
 void setRGB(int red, int green, int blue)
 {
-    analogWrite(RGB_RED, 0);
-    analogWrite(RGB_GREEN, 0);
-    analogWrite(RGB_BLUE, 0);
-    delay(5);
     analogWrite(RGB_RED, red);
     analogWrite(RGB_GREEN, green);
     analogWrite(RGB_BLUE, blue);
@@ -72,6 +77,7 @@ void setRGB(int red, int green, int blue)
 // ANCHOR LiquidCrystal LCD Methodes
 void printToLCD(String firstLine, String secondLine = "")
 {
+    lcd.backlight();
     lcd.clear();
     lcd.print(firstLine);
     lcd.setCursor(0, 1);
@@ -81,11 +87,14 @@ void printToLCD(String firstLine, String secondLine = "")
     {
         lcd.clear();
     }
+    clearLCDTicker.stop();
+    clearLCDTicker.start();
 }
 
 void clearLCD()
 {
     lcd.clear();
+    lcd.noBacklight();
 }
 void handleInternalCommands(int command)
 {
@@ -174,30 +183,60 @@ void checkIRResults()
 // ANCHOR Print to serial
 void printToSerial(String tag, uint32_t text)
 {
-    if (Serial.available())
-    {
 
-        Serial.println(tag + ":" + text);
-    }
-    if (blueToothSlaveSerial.available())
-    {
+    Serial.println(tag + ":" + text);
 
-        blueToothSlaveSerial.println(tag + ":" + text);
-    }
+    blueToothSlaveSerial.println(tag + ":" + text);
 }
 void printToSerial(String tag, String text)
 {
-    if (Serial.available())
-    {
 
-        Serial.println(tag + ":" + text);
-    }
-    if (blueToothSlaveSerial.available())
-    {
+    Serial.println(tag + ":" + text);
 
-        blueToothSlaveSerial.println(tag + ":" + text);
-    }
+    blueToothSlaveSerial.println(tag + ":" + text);
 }
+int toInt(const char *input)
+{
+    int x = 0;
+    sscanf(input, "%d", &x);
+    return x;
+}
+void splitRGB(String input, char delimiter)
+{
+    Vector<String> *result = new Vector<String>();
+    String holder = input;
+    int pos = 0;
+    int itemIndex = 0;
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+    while (holder.length() > 0)
+    {
+        // printToSerial("log", holder);
+
+        pos = holder.indexOf(delimiter);
+        if (pos == -1)
+            pos = 99999;
+        String temp = holder.substring(0, pos);
+        switch (itemIndex++)
+        {
+        case 0:
+            red = toInt(temp.c_str());
+            break;
+        case 1:
+            green = toInt(temp.c_str());
+            break;
+        case 2:
+            blue = toInt(temp.c_str());
+            break;
+        }
+        result->push_back(temp);
+
+        holder.remove(0, pos + 1);
+    }
+    setRGB(red, green, blue);
+}
+
 // ANCHOR Check Serial Input
 void checkSerialInput()
 {
@@ -265,6 +304,19 @@ void checkSerialInput()
             analogWrite(RELAY_PIN, 0);
             printToLCD("relay control", "off");
         }
+    }
+    else if (serialValue.startsWith("rgb:"))
+    {
+        serialValue.replace("rgb:", "");
+        splitRGB(serialValue, ',');
+        // delay(50);
+        // printToSerial("Red", rgb->at(0));
+        // delay(50);
+        // printToSerial("Blue", rgb->at(1));
+        // delay(50);
+        // printToSerial("Green", rgb->at(2));
+
+        // setRGB(toInt(rgb[0].c_str()), toInt(rgb[1].c_str()), toInt(rgb[2].c_str()));
     }
 }
 // ANCHOR RFID methodes
@@ -382,7 +434,7 @@ void loop()
     // passData();
     checkIRResults();
     checkSerialInput();
-
+    clearLCDTicker.update();
     // checkTemperature();
     // checkVolumeInput();
     // checkRFID();
