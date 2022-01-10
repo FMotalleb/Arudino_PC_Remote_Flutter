@@ -382,18 +382,6 @@ class RGBHandler extends StatefulWidget {
 }
 
 class _RGBHandlerState extends State<RGBHandler> {
-  Color _color = const Color(0xff000000);
-  late DelayedSync syncer = DelayedSync(
-      caller: (data) async => widget.messageHandler(data),
-      delay: const Duration(seconds: 1));
-  Color get color => _color;
-
-  set color(Color color) {
-    setState(() => _color = color);
-    syncer.pushString(
-        "rgb:${_color.red * 4},${_color.green * 4},${_color.blue * 4}");
-  }
-
   void update() {
     widget.messageHandler(
         'rgb:${red ? activationValue : 0},${green ? activationValue : 0},${blue ? activationValue : 0}');
