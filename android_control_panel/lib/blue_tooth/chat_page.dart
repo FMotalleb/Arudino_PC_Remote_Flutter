@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:android_control_panel/components/models/delayed_sync/delayed_sync.dart';
+import 'package:android_control_panel/components/widgets/colored_check_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:hemend/ui_related/pre_built_widgets/message_box.dart';
@@ -143,6 +145,11 @@ class _ChatPage extends State<ChatPage> {
                           color: Color(0x66858585))),
                   itemCount: messages.length),
             ),
+            const SizedBox(height: 5, width: 1),
+            RGBHandler(
+              messageHandler: _sendMessage,
+            ),
+            const SizedBox(height: 5, width: 1),
             SizedBox(
               width: 50,
               height: 50,
@@ -361,6 +368,106 @@ class _LightKeyState extends State<LightKey> {
           color: state.secondaryThemeColor,
         ),
         child: Icon(state.icon, color: state.mainThemeColor),
+      ),
+    );
+  }
+}
+
+class RGBHandler extends StatefulWidget {
+  const RGBHandler({Key? key, required this.messageHandler}) : super(key: key);
+
+  final void Function(String) messageHandler;
+  @override
+  _RGBHandlerState createState() => _RGBHandlerState();
+}
+
+class _RGBHandlerState extends State<RGBHandler> {
+  Color _color = const Color(0xff000000);
+  late DelayedSync syncer = DelayedSync(
+      caller: (data) async => widget.messageHandler(data),
+      delay: const Duration(seconds: 1));
+  Color get color => _color;
+
+  set color(Color color) {
+    setState(() => _color = color);
+    syncer.pushString(
+        "rgb:${_color.red * 4},${_color.green * 4},${_color.blue * 4}");
+  }
+
+  void update() {
+    widget.messageHandler(
+        'rgb:${red ? activationValue : 0},${green ? activationValue : 0},${blue ? activationValue : 0}');
+  }
+
+  bool _red = false;
+
+  bool get red => _red;
+
+  set red(bool red) {
+    _red = red;
+    update();
+  }
+
+  bool _blue = false;
+
+  bool get blue => _blue;
+
+  set blue(bool blue) {
+    _blue = blue;
+    update();
+  }
+
+  bool _green = false;
+
+  bool get green => _green;
+
+  set green(bool green) {
+    _green = green;
+    update();
+  }
+
+  static const activationValue = 750;
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const SizedBox(width: 50),
+          ColoredCheckBox(
+            activeBoxColor: Colors.red,
+            deActiveBoxColor: Colors.red,
+            onChanged: (value) => red = value,
+          ),
+          const SizedBox(),
+          ColoredCheckBox(
+            activeBoxColor: Colors.green,
+            deActiveBoxColor: Colors.green,
+            onChanged: (value) => green = value,
+          ),
+          const SizedBox(),
+          ColoredCheckBox(
+            activeBoxColor: Colors.blue,
+            deActiveBoxColor: Colors.blue,
+            onChanged: (value) => blue = value,
+          ),
+          const SizedBox(width: 50),
+          // Slider(
+          //     activeColor: Colors.red,
+          //     value: _color.red.toDouble(),
+          //     max: 255,
+          //     onChanged: (value) => color = _color.withRed(value.toInt())),
+          // Slider(
+          //     activeColor: Colors.green,
+          //     value: _color.green.toDouble(),
+          //     max: 255,
+          //     onChanged: (value) => color = _color.withGreen(value.toInt())),
+          // Slider(
+          //     activeColor: Colors.blue,
+          //     value: _color.blue.toDouble(),
+          //     max: 255,
+          //     onChanged: (value) => color = _color.withBlue(value.toInt())),
+        ],
       ),
     );
   }
