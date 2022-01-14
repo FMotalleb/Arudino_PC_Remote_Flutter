@@ -272,6 +272,7 @@ void setup()
     blueToothSlaveSerial.setTimeout(15);
     SPI.begin(); // Initiate  SPI bus
     Serial.println("setup finished");
+    printToLCD("Boot sequence", "completed");
 }
 // ANCHOR Loop
 void loop()
