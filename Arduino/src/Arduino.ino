@@ -5,8 +5,10 @@
 #include <string.h>
 #include <SoftwareSerial.h>
 #include <Ticker.h>
-#include <RGB7Module.h>
+// #include <RGB7Module.h>
 #include <RelayModule.h>
+// #include <virtuabotixRTC.h>
+// virtuabotixRTC myRTC(5, 7, 10);
 
 using namespace std;
 
@@ -32,7 +34,7 @@ void logger(String data)
 // Relay
 RelayModule relay0(A0, false, logger);
 // RGB module connected to red=A1 green=A2 blue=A3
-RGB7Module RGBModule(A1, A2, A3, logger);
+// RGB7Module RGBModule(A1, A2, A3, logger);
 
 /// 0 : internal commands
 /// 1 : serial command mode
@@ -115,11 +117,11 @@ void handleInternalCommands(int command)
 {
     if (WORKING_MODE == 0)
     {
-        RGBModule.setColor(500, 0, 0);
+        // RGBModule.setColor(500, 0, 0);
     }
     else if (WORKING_MODE == 1)
     {
-        RGBModule.setColor(0, 500, 500);
+        // RGBModule.setColor(0, 500, 500);
     }
 
     switch (command)
@@ -128,7 +130,7 @@ void handleInternalCommands(int command)
         if (WORKING_MODE > 0)
         {
             WORKING_MODE--;
-            RGBModule.setColor(0, 500, 500);
+            // RGBModule.setColor(0, 500, 500);
             showWorkingMode();
         }
         break;
@@ -136,7 +138,7 @@ void handleInternalCommands(int command)
         if (WORKING_MODE < 1)
         {
             WORKING_MODE++;
-            RGBModule.setColor(500, 0, 500);
+            // RGBModule.setColor(500, 0, 500);
             showWorkingMode();
         }
         break;
@@ -162,7 +164,7 @@ void handleInternalCommands(int command)
 
     delay(50);
 
-    RGBModule.setColor(0, 0, 0);
+    // RGBModule.setColor(0, 0, 0);
 }
 // ANCHOR Check Infrared remote result
 void checkIRResults()
@@ -201,7 +203,13 @@ void checkSerialInput()
     {
         serialValue = blueToothSlaveSerial.readString();
     }
+    // if (serialValue.startsWith("time"))
+    // {
 
+    //     String time = toString(myRTC.hours) + ":" + toString(myRTC.minutes);
+    //     printToLCD(time);
+    //     printToSerial("time", time);
+    // }
     if (serialValue.startsWith("lcd:"))
     {
         serialValue.replace("lcd:", "");
@@ -250,7 +258,7 @@ void checkSerialInput()
     else if (serialValue.startsWith("rgb:"))
     {
         serialValue.replace("rgb:", "");
-        RGBModule.doCommand(serialValue);
+        // RGBModule.doCommand(serialValue);
     }
 }
 void log(String)
@@ -262,6 +270,7 @@ void setup()
     // put your setup code here, to run once:
     pinMode(LED_BUILTIN, OUTPUT);
 
+    // myRTC.setDS1302Time(0, 35, 20, 4, 18, 1, 2022);
     irReceiver.enableIRIn();
     // lcd.begin(16, 2);
     lcd.init();
@@ -280,4 +289,5 @@ void loop()
     checkIRResults();
     checkSerialInput();
     clearLCDTicker.update();
+    // myRTC.updateTime();
 }
