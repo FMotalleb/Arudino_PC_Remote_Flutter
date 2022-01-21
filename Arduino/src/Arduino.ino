@@ -10,6 +10,13 @@
 // #include <virtuabotixRTC.h>
 // virtuabotixRTC myRTC(5, 7, 10);
 
+// #include <MFRC522.h>
+
+const int chipSelectPin = 10;
+const int NRSTPD = 5;
+
+// MFRC522 myRFID(chipSelectPin, NRSTPD); // create AddicoreRFID object to control the RFID module
+
 using namespace std;
 
 void printToLCD(String, String);
@@ -261,6 +268,46 @@ void checkSerialInput()
         // RGBModule.doCommand(serialValue);
     }
 }
+
+// void checkRFID()
+// {
+
+//     if (!myRFID.PICC_IsNewCardPresent())
+//     {
+//         return;
+//     }
+//     // Select one of the cards
+//     if (!myRFID.PICC_ReadCardSerial())
+//     {
+//         return;
+//     }
+//     // Show UID on serial monitor
+//     String content = "";
+//     byte letter;
+//     for (byte i = 0; i < myRFID.uid.size; i++)
+//     {
+
+//         Serial.print(myRFID.uid.uidByte[i] < 0x10 ? " 0" : " ");
+//         Serial.print(myRFID.uid.uidByte[i], HEX);
+//         content.concat(String(myRFID.uid.uidByte[i] < 0x10 ? " 0" : " "));
+//         content.concat(String(myRFID.uid.uidByte[i], HEX));
+//     }
+//     content.toUpperCase();
+//     if (content.substring(1) == "39 64 58 C2") // change here the UID of the card/cards that you want to give access
+//     {
+//         printToLCD("Tag Detected", "Motalleb");
+//         delay(300);
+//         relay0.toggle();
+//         myRFID.
+//     }
+
+//     else
+//     {
+//         printToLCD("Error", "Access denied");
+//         delay(3000);
+//     }
+// }
+
 void log(String)
 {
 }
@@ -279,7 +326,14 @@ void setup()
     Serial.setTimeout(15);
     blueToothSlaveSerial.begin(9600);
     blueToothSlaveSerial.setTimeout(15);
-    SPI.begin(); // Initiate  SPI bus
+    // Initiate  SPI bus
+    SPI.begin();
+
+    // pinMode(chipSelectPin, OUTPUT);   // Set digital pin 10 as OUTPUT to connect it to the RFID /ENABLE pin
+    // digitalWrite(chipSelectPin, LOW); // Activate the RFID reader
+
+    // myRFID.PCD_Init(); // Initiate MFRC522
+
     Serial.println("setup finished");
     printToLCD("Boot sequence", "completed");
 }
@@ -289,5 +343,5 @@ void loop()
     checkIRResults();
     checkSerialInput();
     clearLCDTicker.update();
-    // myRTC.updateTime();
+    // checkRFID();
 }
